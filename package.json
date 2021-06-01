@@ -1,0 +1,21 @@
+{
+  "name": "mostsmaartest",
+  "version": "0.0.1",
+  "description": "smaart logger and mapper thing",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "smaart",
+    "gps"
+  ],
+  "author": "jwaltonaudio@gmail.com",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^13.0.1"
+  },
+  "dependencies": {
+    "ws": "^7.4.6"
+  }
+}
