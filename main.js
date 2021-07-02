@@ -90,7 +90,8 @@ const gpsClient = require("./gpsClient.js");
 let gps = new gpsClient();
 gps.startTestServer();
 gps.startClient("127.0.0.1", "12345", function (data) {
-  mainWindow.webContents.send("gps", data)
+  mainWindow.webContents.send("gpsData", data);
+  console.log("handling");
 });
 
 // /api/v3/tabs/Default%20TF/measurements/Input%201

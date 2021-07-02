@@ -7,6 +7,7 @@
 
 // window.api.send("toMain", 'argh');
 
+// console.log is to browser now, not node
 
 window.api.receive("serverList", (data) => { // 
     let x = document.getElementById("serverSelect");
@@ -22,9 +23,7 @@ window.api.receive("wsError", (data) => {
     document.getElementById("errors").innerText = data;
 })
 
-window.api.receive("gps", (data) => {
-    console.log("gps Data! : " + data)
-})
+
 
 window.api.receive("streamData", (data) => {
     data = JSON.parse(data);
@@ -88,3 +87,16 @@ function setDelay() {
     };
     window.api.send("smaart", ["request", payload]);// login
 }
+
+
+window.api.receive("gpsData", (data) => { 
+    // alrighty then.
+    // is the data new? 
+    // maybe just record everthing for now - its only 3600 points an hour.
+    // a lovely button to write this to an obj file?
+    var objText = document.getElementById("objOutput");
+    var curText = objText.value;
+    objText = curText 
+    
+    console.log("gps Data! : " + data.east) 
+})
