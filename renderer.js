@@ -96,7 +96,23 @@ window.api.receive("gpsData", (data) => {
     // a lovely button to write this to an obj file?
     var objText = document.getElementById("objOutput");
     var curText = objText.value;
-    objText = curText 
-    
-    console.log("gps Data! : " + data.east) 
+    objText.value = curText + "\n" + data.north + " " + data.east + " " + data.up;
+      
+
+    const canvas = document.getElementById('mapper');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGradCircle(ctx, data.east, data.north, 50);
+    //drawGradCircle(ctx, 210, 100, 10);
+
 })
+
+
+function drawGradCircle(ctx, x,y, r) {
+    var grad = ctx.createRadialGradient(x, y, r/50, x, y, r);
+    grad.addColorStop(0, 'rgba(255,0,0,255)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.arc(x, y, r, 0, Math.PI*2, false);
+        ctx.fillStyle = grad;
+    ctx.fill();
+    }
