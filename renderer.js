@@ -90,10 +90,12 @@ function setDelay() {
 
 
 window.api.receive("gpsData", (data) => { 
+   
     // alrighty then.
     // is the data new? 
     // maybe just record everthing for now - its only 3600 points an hour.
     // a lovely button to write this to an obj file?
+    console.log(data);
     var objText = document.getElementById("objOutput");
     var curText = objText.value;
     objText.value = curText + "\n" + data.north + " " + data.east + " " + data.up;
@@ -101,8 +103,9 @@ window.api.receive("gpsData", (data) => {
 
     const canvas = document.getElementById('mapper');
     const ctx = canvas.getContext('2d');
+    console.log(data.east);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawGradCircle(ctx, data.east, data.north, 50);
+    drawGradCircle(ctx, (canvas.width/2) + parseFloat(data.east) , (canvas.height/2) + parseFloat(data.north), 50);
     //drawGradCircle(ctx, 210, 100, 10);
 
 })
