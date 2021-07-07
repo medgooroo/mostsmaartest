@@ -111,6 +111,7 @@ window.api.receive("gpsData", (data) => {
     if (Math.sqrt(((data.east - lastMeasPos.east) * (data.east - lastMeasPos.east)) +
         ((data.north - lastMeasPos.north) * (data.north - lastMeasPos.north))) >= distanceThreshold) {
         setDelay(); // update delay in smaart
+        // reset averages?
         lastMeasPos.count = 0; // reset count
         lastMeasPos.east = data.east;
         lastMeasPos.north = data.north;
@@ -118,7 +119,7 @@ window.api.receive("gpsData", (data) => {
     else lastMeasPos.count++;
 
     if (lastMeasPos.count > 5) {
-        console.log("Got 5 points within threshold of: "+ distanceThreshold);
+        console.log("Got 5 points within threshold of: " + distanceThreshold);
         // fit points to canvas.
         if (data.east > maxEast) maxEast = data.east;
         if (data.east < minEast) minEast = data.east;
