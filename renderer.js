@@ -95,33 +95,55 @@ let maxEast = 0;
 let minNorth = 0;
 let maxNorth = 0;
 
+let lastMeasPos = {
+    north: 0,
+    east: 0,
+    count: 0 // need a certain amount of counts withn the threshold distance
+};
+
+
 window.api.receive("gpsData", (data) => {
     console.log("gps data recieved");
     data.east = parseFloat(data.east);
     data.north = parseFloat(data.north);
-    if (data.east > maxEast) maxEast = data.east;
-    if (data.east < minEast) minEast = data.east;
-    if (data.north > maxNorth) maxNorth = data.north;
-    if (data.north < minNorth) minNorth = data.north;
-    const canvas = document.getElementById('mapper');
+    // is the distance to the last point more than the threshold ?
+    let distanceThreshold = 1; // in meters.
+    if (Math.sqrt(((data.east - lastMeasPos.east) * (data.east - lastMeasPos.east)) +
+        ((data.north - lastMeasPos.north) * (data.north - lastMeasPos.north))) >= distanceThreshold) {
+        setDelay(); // update delay in smaart
+        lastMeasPos.count = 0; // reset count
+        lastMeasPos.east = data.east;
+        lastMeasPos.north = data.north;
+    }
+    else lastMeasPos.count++;
 
-    let eastScale = (canvas.width - 100) / (maxEast - minEast);
-    let northScale = (canvas.height - 100) / (maxNorth - minNorth);
+    if (lastMeasPos.count > 5) {
+        console.log("Got 5 points within threshold of: "+ distanceThreshold);
+        // fit points to canvas.
+        if (data.east > maxEast) maxEast = data.east;
+        if (data.east < minEast) minEast = data.east;
+        if (data.north > maxNorth) maxNorth = data.north;
+        if (data.north < minNorth) minNorth = data.north;
+        const canvas = document.getElementById('mapper');
 
-    let scale = Math.min(eastScale, northScale);
+        let eastScale = (canvas.width - 100) / (maxEast - minEast);
+        let northScale = (canvas.height - 100) / (maxNorth - minNorth);
+        let scale = Math.min(eastScale, northScale);
+
+        locations.push(data);
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        locations.forEach(element => {
+            drawGradCircle(ctx, (canvas.width / 2) + element.east * scale, (canvas.height / 2) + element.north * scale, 50);
+        });
+    }
 
     var objText = document.getElementById("objOutput");
     var curText = objText.value;
     objText.value = curText + "\n" + data.north + " " + data.east + " " + data.up;
 
-    locations.push(data);
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    locations.forEach(element => {
-        drawGradCircle(ctx, (canvas.width / 2) + element.east * scale, (canvas.height / 2) + element.north * scale, 50);
-    });
-
 })
+
 
 
 function drawGradCircle(ctx, x, y, r) {
