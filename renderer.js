@@ -103,32 +103,33 @@ window.api.receive("gpsData", (data) => {
     if (data.east < minEast) minEast = data.east;
     if (data.north > maxNorth) maxNorth = data.north;
     if (data.north < minNorth) minNorth = data.north;
-     const canvas = document.getElementById('mapper');
+    const canvas = document.getElementById('mapper');
 
-    let eastScale = (canvas.width - 100 )/ (maxEast - minEast);
-    let northScale = (canvas.height -100 )/ (maxNorth - minNorth);
+    let eastScale = (canvas.width - 100) / (maxEast - minEast);
+    let northScale = (canvas.height - 100) / (maxNorth - minNorth);
 
     let scale = Math.min(eastScale, northScale);
-    
+
     var objText = document.getElementById("objOutput");
     var curText = objText.value;
     objText.value = curText + "\n" + data.north + " " + data.east + " " + data.up;
 
     locations.push(data);
     const ctx = canvas.getContext('2d');
-     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     locations.forEach(element => {
-           drawGradCircle(ctx, (canvas.width/2) + element.east * scale , (canvas.height/2) + element.north * scale, 50);
+        drawGradCircle(ctx, (canvas.width / 2) + element.east * scale, (canvas.height / 2) + element.north * scale, 50);
     });
 
 })
 
 
 function drawGradCircle(ctx, x, y, r) {
-   // var grad = ctx.createRadialGradient(x, y, r / 50, x, y, r);
-   // grad.addColorStop(0, 'rgba(255,0,0,255)');
-   // grad.addColorStop(1, 'rgba(255,0,0,0)');
+    ctx.beginPath(); // AHHA - performance is shit without this.
+    var grad = ctx.createRadialGradient(x, y, r / 50, x, y, r);
+    grad.addColorStop(0, 'rgba(255,0,0,255)');
+    grad.addColorStop(1, 'rgba(255,0,0,0)');
     ctx.arc(x, y, r, 0, Math.PI * 2);
-    //ctx.fillStyle = grad;
+    ctx.fillStyle = grad;
     ctx.fill();
 }
