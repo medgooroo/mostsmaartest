@@ -89,33 +89,46 @@ function setDelay() {
 }
 
 
-window.api.receive("gpsData", (data) => { 
-   
-    // alrighty then.
-    // is the data new? 
-    // maybe just record everthing for now - its only 3600 points an hour.
-    // a lovely button to write this to an obj file?
-    console.log(data);
+let locations = new Array;
+let minEast = 0;
+let maxEast = 0;
+let minNorth = 0;
+let maxNorth = 0;
+
+window.api.receive("gpsData", (data) => {
+    console.log("gps data recieved");
+    data.east = parseFloat(data.east);
+    data.north = parseFloat(data.north);
+    if (data.east > maxEast) maxEast = data.east;
+    if (data.east < minEast) minEast = data.east;
+    if (data.north > maxNorth) maxNorth = data.north;
+    if (data.north < minNorth) minNorth = data.north;
+     const canvas = document.getElementById('mapper');
+
+    let eastScale = (canvas.width - 100 )/ (maxEast - minEast);
+    let northScale = (canvas.height -100 )/ (maxNorth - minNorth);
+
+    let scale = Math.min(eastScale, northScale);
+    
     var objText = document.getElementById("objOutput");
     var curText = objText.value;
     objText.value = curText + "\n" + data.north + " " + data.east + " " + data.up;
-      
 
-    const canvas = document.getElementById('mapper');
+    locations.push(data);
     const ctx = canvas.getContext('2d');
-    console.log(data.east);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawGradCircle(ctx, (canvas.width/2) + parseFloat(data.east) , (canvas.height/2) + parseFloat(data.north), 50);
-    //drawGradCircle(ctx, 210, 100, 10);
+     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    locations.forEach(element => {
+           drawGradCircle(ctx, (canvas.width/2) + element.east * scale , (canvas.height/2) + element.north * scale, 50);
+    });
 
 })
 
 
-function drawGradCircle(ctx, x,y, r) {
-    var grad = ctx.createRadialGradient(x, y, r/50, x, y, r);
-    grad.addColorStop(0, 'rgba(255,0,0,255)');
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.arc(x, y, r, 0, Math.PI*2, false);
-        ctx.fillStyle = grad;
+function drawGradCircle(ctx, x, y, r) {
+   // var grad = ctx.createRadialGradient(x, y, r / 50, x, y, r);
+   // grad.addColorStop(0, 'rgba(255,0,0,255)');
+   // grad.addColorStop(1, 'rgba(255,0,0,0)');
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    //ctx.fillStyle = grad;
     ctx.fill();
-    }
+}
