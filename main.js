@@ -33,8 +33,7 @@ app.whenReady().then(() => {
   mainWindow.loadFile('index.html')
 
     // Open the DevTools.
-
-    //mainWindow.webContents.openDevTools()
+    mainWindow.webContents.openDevTools()
     ;
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
@@ -43,12 +42,14 @@ app.whenReady().then(() => {
   })
 
   sApi.discoverServers(updateServerList);
-
 })
 
+function getMeasurementList(measurementList) {
+  mainWindow.webContents.send("measurementList", measurementList)
+}
 
 function updateServerList(serverList) {
-  console.log("found a Server")
+  console.log(serverList);
   mainWindow.webContents.send("serverList", serverList);
 }
 
@@ -72,6 +73,7 @@ function streamHandler(data) {
 ipcMain.on('smaart', (event, command) => {
   switch (command[0]) {
     case "connect":
+      console.log("apiConnect..")
       sApi.connectToServer(command[1], errorHandler, connectedHandler);
       break;
     case "request":

@@ -19,6 +19,16 @@ window.api.receive("serverList", (data) => { //
     }
 });
 
+window.api.receive("measurementList", (data) => {
+    let x = document.getElementById("measurementStreams");
+    x.length = 0;
+    for (let [key, value] of data.entries()) {
+        var option = document.createElement("option");
+        option.text = key;
+        x.add(option);
+    }
+})
+
 window.api.receive("wsError", (data) => {
     document.getElementById("errors").innerText = data;
 })
@@ -50,6 +60,7 @@ document.getElementById("connectButton").addEventListener("click", function () {
     let ip = e.options[e.selectedIndex].text;
     window.api.send("smaart", ["connect", ip]);
 });
+
 
 document.getElementById("doSomething").addEventListener("click", function () {
     window.api.send("smaart", ["login", "supersecret"]);
@@ -88,13 +99,13 @@ window.api.receive("gpsData", (data) => {
     data.east = parseFloat(data.east);
     data.north = parseFloat(data.north);
     // is the distance to the last point more than the threshold ?
-    let maxDistanceThreshold = 50; // in meters.
+    let maxDistanceThreshold = 150; // in meters.
     let currDist = Math.sqrt(
         ((data.east - lastMeasPos.east) * ((data.east - lastMeasPos.east)) + ((data.north - lastMeasPos.north) * (data.north - lastMeasPos.north))
         ));
     console.log("currDist: " + currDist);
     if (currDist >= maxDistanceThreshold) {
-        setDelay(); // update delay in smaart
+        window.api.send("smaart", ["setDelay"]);        // update delay in smaart
         console.log("new position, reseting smaart delay");// reset averages?
         lastMeasPos.count = 0; // reset count
         lastMeasPos.east = data.east;

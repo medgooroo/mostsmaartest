@@ -5,7 +5,8 @@ let wSocket = null;
 let streamSocket = null;
 let udpserver = null;
 let state = "discover";
-let defaultMeasurement = "";
+let spectrumMeasurements = [];
+let transferFunctionMeasurements = [];
 
 
 class smaartAPI {
@@ -15,6 +16,7 @@ class smaartAPI {
     listServers() {
         return this.smaartServers;
     }
+
     discoverServers(updateFn) { // we pass this function all over the place.. hmmm
         var PORT = 25752;
         var BROADCAST_ADDR = "255.255.255.255";
@@ -51,7 +53,6 @@ class smaartAPI {
             //self.addServer(conn.remoteAddress, updateFn);
             conn.on('data', function (msg) {
                 let port = msg[5] * 256 + msg[4];
-                console.log("port: " + port);
                 self.addServer(remoteAddress + ":" + port, updateFn);
             })
         }
@@ -65,8 +66,10 @@ class smaartAPI {
         }
     }
 
+
+
     connectToServer(ip, errHandler, connectedHandler) {
-        state = "connecting";
+        this.state = "connecting";
         let url = "ws://" + ip + "/api/v3/";
         console.log("connecting to: " + url);
         wSocket = new WebSocket(url);
@@ -80,14 +83,38 @@ class smaartAPI {
     }
 
     responseHandler(event) {
+        console.log(event.data);
+        state = "connected";
         let data = JSON.parse(event.data);
         if (data["response"]["error"]) {
-            console.log("error from smaart: " + data.response.error);// we have a meaningful response
+            console.log("smaart error: " + data.response.error);// we have a meaningful response
         }
-        // do we just store all the json and query it as we go? 
-        // or build our idea of smaart state?
-        // switch based  on the response to handle things. use this to build an internal state of smaart status. Measurement names etc.
-        // do we implement requests like getmeasurements by returning promises from them with the response being eventually generated here?
+
+        if (data["response"]["windows"]) {
+            console.log("looking for endpoints");
+            // The goggles, they do nothing.
+            // look for any measurements
+            for (let window in data.response.windows) {
+                for (let tab in data.response.windows[window].tabs) {
+                    for (let transMeas in data.response.windows[window].tabs[tab].transferFunctionMeasurements) {
+                        let aTrans = {
+                            name: data.response.windows[window].tabs[tab].transferFunctionMeasurements[transMeas].measurementName,
+                            endPoint: data.response.windows[window].tabs[tab].transferFunctionMeasurements[transMeas].streamEndpoint
+                        }
+                        transferFunctionMeasurements.push(aTrans);
+                    }
+
+                    for (let specMeas in data.response.windows[window].tabs[tab].spectrumMeasurements) {
+                        let aSpec = {
+                            name: data.response.windows[window].tabs[tab].spectrumMeasurements[specMeas].measurementName,
+                            endPoint: data.response.windows[window].tabs[tab].spectrumMeasurements[specMeas].streamEndpoint
+                        }
+                        spectrumMeasurements.push(aSpec);
+                    }
+                }
+            }
+        }
+   
     }
 
     login(password) {
@@ -97,6 +124,7 @@ class smaartAPI {
             "properties": [{ "password": password }]
         };
         this.request(payload);
+        this.getMeasurements();
     }
 
     setDelay() { // find and insert delay or insert delay if given
@@ -130,17 +158,17 @@ class smaartAPI {
         let url = "ws://" + ip + measurementName;
         streamSocket = new WebSocket(url);
         streamSocket.onmessage = streamHandler;
-
     }
 
     getMeasurements() { // requests all available measurements
         let payload =
         {
             "action": "get",
-            "properties": "measurements"
+            "target": "activeMeasurements"
         };
         this.request(payload);
     }
+
 
 }
 
