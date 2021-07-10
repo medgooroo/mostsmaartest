@@ -7,7 +7,7 @@ let udpserver = null;
 let state = "discover";
 let spectrumMeasurements = [];
 let transferFunctionMeasurements = [];
-
+let callbackMeasurements = null;
 
 class smaartAPI {
     constructor() {
@@ -91,9 +91,11 @@ class smaartAPI {
         }
 
         if (data["response"]["windows"]) {
-            console.log("looking for endpoints");
+
             // The goggles, they do nothing.
             // look for any measurements
+            transferFunctionMeasurements.length = 0; // clear the arrays.
+            spectrumMeasurements.length = 0;
             for (let window in data.response.windows) {
                 for (let tab in data.response.windows[window].tabs) {
                     for (let transMeas in data.response.windows[window].tabs[tab].transferFunctionMeasurements) {
@@ -114,7 +116,9 @@ class smaartAPI {
                 }
             }
         }
-   
+        if (callbackMeasurements) {
+            callbackMeasurements([transferFunctionMeasurements, spectrumMeasurements]);
+        }
     }
 
     login(password) {
@@ -143,7 +147,7 @@ class smaartAPI {
 
     request(payload) {
 
-        console.log(JSON.stringify(payload));
+        //     console.log(JSON.stringify(payload)); ///////////////////////////////////////////////////////////////////////
         if (wSocket != undefined) {
             wSocket.send(JSON.stringify(payload));
         }
@@ -160,12 +164,13 @@ class smaartAPI {
         streamSocket.onmessage = streamHandler;
     }
 
-    getMeasurements() { // requests all available measurements
+    getMeasurements(responseFn) { // requests all available measurements
         let payload =
         {
             "action": "get",
-            "target": "activeMeasurements"
+            "target": "measurements"
         };
+        callbackMeasurements = responseFn;
         this.request(payload);
     }
 

@@ -19,12 +19,18 @@ window.api.receive("serverList", (data) => { //
     }
 });
 
-window.api.receive("measurementList", (data) => {
+window.api.receive("endPointList", (data) => {
     let x = document.getElementById("measurementStreams");
     x.length = 0;
-    for (let [key, value] of data.entries()) {
+    
+    for (let spec in data[0]) {
         var option = document.createElement("option");
-        option.text = key;
+        option.text = data[0][spec].name;
+        x.add(option);
+    }
+    for (let trans in data[1]) {
+        var option = document.createElement("option");
+        option.text = data[1][trans].name;
         x.add(option);
     }
 })
@@ -46,8 +52,8 @@ window.api.receive("streamData", (data) => {
         ctx.strokeRect(i * barWidth, 0, barWidth, barHeight * -data.data[i][1])
     };
     ctx.stroke();
-
 })
+
 
 window.api.receive("wsConnect", (data) => {
     console.log("renderer: connected!");
@@ -62,8 +68,9 @@ document.getElementById("connectButton").addEventListener("click", function () {
 });
 
 
-document.getElementById("doSomething").addEventListener("click", function () {
+document.getElementById("login").addEventListener("click", function () {
     window.api.send("smaart", ["login", "supersecret"]);
+    window.api.send("smaart", ["getEndPointList"]);
 });
 
 document.getElementById("setDelay").addEventListener("click", function () {

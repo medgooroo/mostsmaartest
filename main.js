@@ -44,10 +44,6 @@ app.whenReady().then(() => {
   sApi.discoverServers(updateServerList);
 })
 
-function getMeasurementList(measurementList) {
-  mainWindow.webContents.send("measurementList", measurementList)
-}
-
 function updateServerList(serverList) {
   console.log(serverList);
   mainWindow.webContents.send("serverList", serverList);
@@ -66,7 +62,10 @@ function connectedHandler() {
 function streamHandler(data) {
   mainWindow.webContents.send("streamData", data.data)
   //console.log(data.data);
+}
 
+function endPointHandler(data) {
+    mainWindow.webContents.send("endPointList", data)
 }
 
 
@@ -87,6 +86,9 @@ ipcMain.on('smaart', (event, command) => {
       break;
     case "setDelay":
       sApi.setDelay();
+      break;
+    case "getEndPointList":
+      sApi.getMeasurements(endPointHandler);
       break;
   }
 });
