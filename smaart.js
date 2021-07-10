@@ -5,6 +5,8 @@ let wSocket = null;
 let streamSocket = null;
 let udpserver = null;
 let state = "discover";
+let defaultMeasurement = "";
+
 
 class smaartAPI {
     constructor() {
@@ -13,7 +15,7 @@ class smaartAPI {
     listServers() {
         return this.smaartServers;
     }
-    discoverServers(updateFn) {
+    discoverServers(updateFn) { // we pass this function all over the place.. hmmm
         var PORT = 25752;
         var BROADCAST_ADDR = "255.255.255.255";
         var dgram = require('dgram');
@@ -78,13 +80,43 @@ class smaartAPI {
     }
 
     responseHandler(event) {
-        console.log(event.data);
+        let data = JSON.parse(event.data);
+        if (data["response"]["error"]) {
+            console.log("error from smaart: " + data.response.error);// we have a meaningful response
+        }
+        // do we just store all the json and query it as we go? 
+        // or build our idea of smaart state?
+        // switch based  on the response to handle things. use this to build an internal state of smaart status. Measurement names etc.
+        // do we implement requests like getmeasurements by returning promises from them with the response being eventually generated here?
+    }
+
+    login(password) {
+        let payload =
+        {
+            "action": "set",
+            "properties": [{ "password": password }]
+        };
+        this.request(payload);
+    }
+
+    setDelay() { // find and insert delay or insert delay if given
+        let payload =
+        {
+            "action": "findDelay",
+            "target": { "measurementName": "Default TF" },
+            "properties": [
+                { "automaticallyStart": true },
+                { "automaticallyInsert": true },
+                { "automaticallyStop": false }
+            ]
+        };
+        this.request(payload);
     }
 
     request(payload) {
-  
+
         console.log(JSON.stringify(payload));
-          if (wSocket != undefined) {
+        if (wSocket != undefined) {
             wSocket.send(JSON.stringify(payload));
         }
         else {
@@ -95,12 +127,42 @@ class smaartAPI {
     startStream(ip, measurementName, streamHandler) {
         console.log("start stream @ " + ip);
         console.log("name: " + measurementName);
-        let url ="ws://" +  ip + measurementName;
+        let url = "ws://" + ip + measurementName;
         streamSocket = new WebSocket(url);
         streamSocket.onmessage = streamHandler;
-        
+
+    }
+
+    getMeasurements() { // requests all available measurements
+        let payload =
+        {
+            "action": "get",
+            "properties": "measurements"
+        };
+        this.request(payload);
     }
 
 }
 
 module.exports = smaartAPI;
+
+
+
+/* what the hell do we acutally want here?
+
+we want ot create our smaart class.
+so  startServerSearch(callback)
+    stopServerSearch() // we#ve found what we want.
+    listServers()  // probably called when we let our client know we've found a server
+    connectToServer()
+    listEndpoints() //  // we've probably generate this list after connecting to server.
+    listSpectrumMeasurements() // we've probably generated this list after we connected.
+    listTransferMeasurements() // we've probably generated this list after we connected.
+    fetchData(measurement?) //   this is startstrean
+    resetDelayOnMeasurement() // thing.
+    sendPayload() // internal but doesn't have to be.
+
+we want to list servers its found. - that needs to have a callback as theres no limit to the end of that
+
+
+*/

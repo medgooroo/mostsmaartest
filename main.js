@@ -32,9 +32,9 @@ app.whenReady().then(() => {
   // and load the index.html of the app.
   mainWindow.loadFile('index.html')
 
-  // Open the DevTools.
+    // Open the DevTools.
 
-  mainWindow.webContents.openDevTools()
+    //mainWindow.webContents.openDevTools()
     ;
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
@@ -48,9 +48,8 @@ app.whenReady().then(() => {
 
 
 function updateServerList(serverList) {
-  mainWindow.webContents.send("serverList", serverList);
   console.log("found a Server")
-  let error = "arghgh";
+  mainWindow.webContents.send("serverList", serverList);
 }
 
 function errorHandler(error) {
@@ -81,8 +80,12 @@ ipcMain.on('smaart', (event, command) => {
     case "stream":
       sApi.startStream(command[1], command[2], streamHandler);
       break;
-
-
+    case "login":
+      sApi.login(command[1]);
+      break;
+    case "setDelay":
+      sApi.setDelay();
+      break;
   }
 });
 
@@ -91,21 +94,10 @@ let gps = new gpsClient();
 gps.startTestServer();
 gps.startClient("127.0.0.1", "12345", function (data) {
   mainWindow.webContents.send("gpsData", data);
-  console.log("handling");
+  // console.log("handling");
 });
 
 // /api/v3/tabs/Default%20TF/measurements/Input%201
-
-
-
-
-
-
-//connect with ws
-
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // find the smaart server.
 // connect to it.
@@ -114,20 +106,6 @@ gps.startClient("127.0.0.1", "12345", function (data) {
 // find the (local?) rtknavi server.  - passed in arg option? just use localhost for now.
 // if enough time has passed and we're getting a fix from the rtknavi
 // recalc and apply time offset on the measurement.
-
-
-/*
-{
- "action": "findDelay",
- "target": { "measurementName": "EQ" }, // hmmmm
- "properties": [
- { "automaticallyStart": true },
- { "automaticallyInsert": true },
- { "automaticallyStop": false }
- ]
-}
-
-*/
 
 // record timestamp, location from gps server and transfer result from smaart.
 // then some kind of wonderful solution for plotting this. )

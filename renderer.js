@@ -23,8 +23,6 @@ window.api.receive("wsError", (data) => {
     document.getElementById("errors").innerText = data;
 })
 
-
-
 window.api.receive("streamData", (data) => {
     data = JSON.parse(data);
     const canvas = document.getElementById('spectrum');
@@ -46,18 +44,23 @@ window.api.receive("wsConnect", (data) => {
     document.getElementById("connectButton").label = "connected!";
 })
 
-document.getElementById("connectButton").addEventListener("click", function () { connectToServer() });
-document.getElementById("doSomething").addEventListener("click", function () { login() });
-document.getElementById("setDelay").addEventListener("click", function () { setDelay() });
-document.getElementById("startStream").addEventListener("click", function () { startStream() });
-
-
-function connectToServer() {
+document.getElementById("connectButton").addEventListener("click", function () {
     console.log("calling connect from render");
     let e = document.getElementById("serverSelect");
     let ip = e.options[e.selectedIndex].text;
     window.api.send("smaart", ["connect", ip]);
-}
+});
+
+document.getElementById("doSomething").addEventListener("click", function () {
+    window.api.send("smaart", ["login", "supersecret"]);
+});
+
+document.getElementById("setDelay").addEventListener("click", function () {
+    window.api.send("smaart", ["setDelay"]);
+});
+
+document.getElementById("startStream").addEventListener("click", function () { startStream() });
+
 
 function startStream() {
     let e = document.getElementById("serverSelect");
@@ -65,28 +68,6 @@ function startStream() {
     window.api.send("smaart", ["stream", ip, "/api/v3/tabs/Default%20TF/measurements/Input%201"]);
 }
 
-function login() {
-    let payload =
-    {
-        "action": "set",
-        "properties": [{ "password": "supersecret" }]
-    };
-    window.api.send("smaart", ["request", payload]);// login
-}
-
-function setDelay() {
-    let payload =
-    {
-        "action": "findDelay",
-        "target": { "measurementName": "Default TF" },
-        "properties": [
-            { "automaticallyStart": true },
-            { "automaticallyInsert": true },
-            { "automaticallyStop": false }
-        ]
-    };
-    window.api.send("smaart", ["request", payload]);// login
-}
 
 
 let locations = new Array;
@@ -103,15 +84,18 @@ let lastMeasPos = {
 
 
 window.api.receive("gpsData", (data) => {
-    console.log("gps data recieved");
+    //   console.log("gps data recieved");
     data.east = parseFloat(data.east);
     data.north = parseFloat(data.north);
     // is the distance to the last point more than the threshold ?
-    let distanceThreshold = 1; // in meters.
-    if (Math.sqrt(((data.east - lastMeasPos.east) * (data.east - lastMeasPos.east)) +
-        ((data.north - lastMeasPos.north) * (data.north - lastMeasPos.north))) >= distanceThreshold) {
+    let maxDistanceThreshold = 50; // in meters.
+    let currDist = Math.sqrt(
+        ((data.east - lastMeasPos.east) * ((data.east - lastMeasPos.east)) + ((data.north - lastMeasPos.north) * (data.north - lastMeasPos.north))
+        ));
+    console.log("currDist: " + currDist);
+    if (currDist >= maxDistanceThreshold) {
         setDelay(); // update delay in smaart
-        // reset averages?
+        console.log("new position, reseting smaart delay");// reset averages?
         lastMeasPos.count = 0; // reset count
         lastMeasPos.east = data.east;
         lastMeasPos.north = data.north;
@@ -119,7 +103,7 @@ window.api.receive("gpsData", (data) => {
     else lastMeasPos.count++;
 
     if (lastMeasPos.count > 5) {
-        console.log("Got 5 points within threshold of: " + distanceThreshold);
+        console.log("Got 5 points within threshold of: " + maxDistanceThreshold);
         // fit points to canvas.
         if (data.east > maxEast) maxEast = data.east;
         if (data.east < minEast) minEast = data.east;
