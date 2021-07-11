@@ -8,6 +8,10 @@
 // window.api.send("toMain", 'argh');
 
 // console.log is to browser now, not node
+let currData = null;
+let allData = [];
+let selectedFreqIndex = -1;
+let scale = 1;
 
 window.api.receive("serverList", (data) => { // 
     let x = document.getElementById("serverSelect");
@@ -22,7 +26,7 @@ window.api.receive("serverList", (data) => { //
 window.api.receive("endPointList", (data) => {
     let x = document.getElementById("measurementStreams");
     x.length = 0;
-    
+
     for (let spec in data[0]) {
         var option = document.createElement("option");
         option.text = data[0][spec].name;
@@ -40,24 +44,44 @@ window.api.receive("wsError", (data) => {
 })
 
 window.api.receive("streamData", (data) => {
-    data = JSON.parse(data);
-    const canvas = document.getElementById('spectrum');
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    currData = JSON.parse(data);
 
-    ctx.lineWidth = 1;
-    var barWidth = canvas.width / data.data.length;
-    var barHeight = canvas.height / 130;
-    for (var i = 0; i < data.data.length; i++) {
-        ctx.strokeRect(i * barWidth, 0, barWidth, barHeight * -data.data[i][1])
-    };
-    ctx.stroke();
+    // currData.data[ [freq, mag, phase, coherence ] ];  // transfer function
+    // currData.data[ [freq, mag] ];                     // spectrum
+    if(selectedFreqIndex == -1) {
+        let x = document.getElementById("freqSelect");
+        for (let bin in currData.data) {
+            var option = document.createElement("option");
+            option.value = bin;
+            option.text = currData.data[bin][0];
+            x.add(option);
+        }
+        
+        selectedFreqIndex = 0;
+    }
+    // const canvas = document.getElementById('spectrum');
+    // const ctx = canvas.getContext('2d');
+    // ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // ctx.lineWidth = 1;
+    // var barWidth = canvas.width / data.data.length;
+    // var barHeight = canvas.height / 130;
+    // for (var i = 0; i < data.data.length; i++) {
+    //     ctx.strokeRect(i * barWidth, 0, barWidth, barHeight * -data.data[i][1])
+    // };
+    // ctx.stroke();
+    // currData.data[ [freq, mag, phase, coherence ] ]; 
 })
 
 
 window.api.receive("wsConnect", (data) => {
     console.log("renderer: connected!");
     document.getElementById("connectButton").label = "connected!";
+})
+
+document.getElementById("freqSelect").addEventListener("change", function() {
+    selectedFreqIndex = document.getElementById("freqSelect").value;
+    redrawMap();
 })
 
 document.getElementById("connectButton").addEventListener("click", function () {
@@ -118,27 +142,36 @@ window.api.receive("gpsData", (data) => {
         lastMeasPos.east = data.east;
         lastMeasPos.north = data.north;
     }
-    else lastMeasPos.count++;
+    else {
+        lastMeasPos.count++;
+
+    }
 
     if (lastMeasPos.count > 5) {
         console.log("Got 5 points within threshold of: " + maxDistanceThreshold);
+        let now = {
+            data: currData,
+            north: data.north,
+            east: data.east
+        };
+        console.log(now);
+        if (currData) allData.push(now);
+        const canvas = document.getElementById('mapper');
+        const ctx = canvas.getContext('2d');
+
         // fit points to canvas.
         if (data.east > maxEast) maxEast = data.east;
         if (data.east < minEast) minEast = data.east;
         if (data.north > maxNorth) maxNorth = data.north;
         if (data.north < minNorth) minNorth = data.north;
-        const canvas = document.getElementById('mapper');
 
-        let eastScale = (canvas.width - 100) / (maxEast - minEast);
-        let northScale = (canvas.height - 100) / (maxNorth - minNorth);
-        let scale = Math.min(eastScale, northScale);
+        let eastScale = (canvas.width) / (maxEast - minEast);
+        let northScale = (canvas.height) / (maxNorth - minNorth);
+        scale = Math.min(eastScale, northScale);
 
-        locations.push(data);
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        locations.forEach(element => {
-            drawGradCircle(ctx, (canvas.width / 2) + element.east * scale, (canvas.height / 2) + element.north * scale, 50);
-        });
+        //  locations.push(data);
+
+        redrawMap();
     }
 
     var objText = document.getElementById("objOutput");
@@ -147,14 +180,42 @@ window.api.receive("gpsData", (data) => {
 
 })
 
+function redrawMap() {
+    const canvas = document.getElementById('mapper');
+    const ctx = canvas.getContext('2d');
 
+    ctx.beginPath();
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    if (allData[allData.length - 1]) {
+        allData.forEach(element => {
+            let val = element.data.data[selectedFreqIndex][1] + 100;
+ 
+            drawGradCircle(ctx, (canvas.width / 2) + element.east * scale, (canvas.height / 2) + element.north * scale, 50, val);
+        });
+    }
+}
 
-function drawGradCircle(ctx, x, y, r) {
+function drawGradCircle(ctx, x, y, r, val) {
     ctx.beginPath(); // AHHA - performance is shit without this.
     var grad = ctx.createRadialGradient(x, y, r / 50, x, y, r);
-    grad.addColorStop(0, 'rgba(255,0,0,255)');
-    grad.addColorStop(1, 'rgba(255,0,0,0)');
+    grad.addColorStop(0, 'rgba(' + perc2color(val) + ',255)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fillStyle = grad;
     ctx.fill();
+}
+
+function perc2color(perc) {
+    var r, g, b = 0;
+    if (perc < 50) {
+        r = 255;
+        g = Math.round(5.1 * perc);
+    }
+    else {
+        g = 255;
+        r = Math.round(510 - 5.10 * perc);
+    }
+    return (r + "," + g + "," + b);
 }

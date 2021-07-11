@@ -29,7 +29,7 @@ class gpsClient {
                 if (conn != undefined) {
                     conn.write("2021/05/30 23:26:11.000         " + (Math.random()*140 -50 ).toString() + "         "+ ((Math.random() * 100) - 50).toString() + "        -0.2832   1  12   0.1168   0.1052   0.1565  -0.0052  -0.0446  -0.0785   2.01    1.1\n\r") // generic bit o test data 
                 }
-            }, 1000);
+            }, 100);
 
         }
     }
