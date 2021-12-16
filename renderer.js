@@ -13,6 +13,33 @@ let allData = [];
 let selectedFreqIndex = -1;
 let scale = 1;
 
+TESTER = document.getElementById('tester');
+Plotly.newPlot(TESTER, [{
+    x: [1, 2, 3, 4, 5],
+    y: [1, 2, 4, 8, 16]
+}], {
+    margin: { t: 0 },
+    xaxis: {
+        type: 'log',
+        autorange: true
+      },
+});
+
+function update(x,y) {
+    Plotly.animate(TESTER, {
+        data: [{ x: x, y: y }]
+    }, {
+        transition: {
+            duration: 0
+        },
+        frame: {
+            duration: 0,
+           // redraw: false
+        }
+    });
+}
+
+
 window.api.receive("serverList", (data) => { // 
     let x = document.getElementById("serverSelect");
     x.length = 0;
@@ -45,21 +72,27 @@ window.api.receive("wsError", (data) => {
 
 window.api.receive("streamData", (data) => {
     currData = JSON.parse(data);
-
-    // currData.data[ [freq, mag, phase, coherence ] ];  // transfer function
-    // currData.data[ [freq, mag] ];                     // spectrum
-    if(selectedFreqIndex == -1) {
-        let x = document.getElementById("freqSelect");
-        for (let bin in currData.data) {
-            var option = document.createElement("option");
-            option.value = bin;
-            option.text = currData.data[bin][0];
-            x.add(option);
-        }
-        
-        selectedFreqIndex = 0;
+    plotFreq = [];
+    plotMag = [];
+    for (var i = 0; i < currData.data.length; i++) {
+        plotFreq[i] = currData.data[i][0];
+        plotMag[i] = currData.data[i][1];
     }
-    // const canvas = document.getElementById('spectrum');
+    update(plotFreq, plotMag);
+    // // currData.data[ [freq, mag, phase, coherence ] ];  // transfer function
+    // // currData.data[ [freq, mag] ];                     // spectrum
+    // if (selectedFreqIndex == -1) {
+    //     let x = document.getElementById("freqSelect");
+    //     for (let bin in currData.data) {
+    //         var option = document.createElement("option");
+    //         option.value = bin;
+    //         option.text = currData.data[bin][0];
+    //         x.add(option);
+    //     }
+
+    //     selectedFreqIndex = 0;
+    // }
+    // // const canvas = document.getElementById('spectrum');
     // const ctx = canvas.getContext('2d');
     // ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -79,7 +112,7 @@ window.api.receive("wsConnect", (data) => {
     document.getElementById("connectButton").label = "connected!";
 })
 
-document.getElementById("freqSelect").addEventListener("change", function() {
+document.getElementById("freqSelect").addEventListener("change", function () {
     selectedFreqIndex = document.getElementById("freqSelect").value;
     redrawMap();
 })
@@ -107,6 +140,7 @@ document.getElementById("startStream").addEventListener("click", function () { s
 function startStream() {
     let e = document.getElementById("serverSelect");
     let ip = e.options[e.selectedIndex].text;
+    // check for active and obv build stream names
     window.api.send("smaart", ["stream", ip, "/api/v3/tabs/Default%20TF/measurements/Input%201"]);
 }
 
@@ -187,11 +221,11 @@ function redrawMap() {
     ctx.beginPath();
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     if (allData[allData.length - 1]) {
         allData.forEach(element => {
             let val = element.data.data[selectedFreqIndex][1] + 100;
- 
+
             drawGradCircle(ctx, (canvas.width / 2) + element.east * scale, (canvas.height / 2) + element.north * scale, 50, val);
         });
     }

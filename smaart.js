@@ -19,9 +19,14 @@ class smaartAPI {
 
     discoverServers(updateFn) { // we pass this function all over the place.. hmmm
         var PORT = 25752;
-        var BROADCAST_ADDR = "255.255.255.255";
+        var BROADCAST_ADDR = "192.168.0.255"; 
         var dgram = require('dgram');
         udpserver = dgram.createSocket("udp4");
+
+        udpserver.on('error', (err) => {
+            console.log(`server error:\n${err.stack}`);
+            udpserver.close();
+          });
 
         udpserver.bind(function () {
             udpserver.setBroadcast(true);
@@ -49,7 +54,7 @@ class smaartAPI {
         var self = this;
         function handleConnection(conn) {
             var remoteAddress = conn.remoteAddress;
-            //  console.log('new client connection from %s', remoteAddress);
+             console.log('new client connection from %s', remoteAddress);
             //self.addServer(conn.remoteAddress, updateFn);
             conn.on('data', function (msg) {
                 let port = msg[5] * 256 + msg[4];
